@@ -1,0 +1,23 @@
+{
+  "title": "Cart contract",
+  "limitations": [],
+  "tests": [
+    {
+      "id": "cart-count",
+      "title": "Cart increments",
+      "requirement": "Adding a shirt increases the cart count to one.",
+      "priority": "high",
+      "preconditions": [],
+      "assumptions": [],
+      "steps": [
+        { "action": "navigate", "path": "/products" },
+        { "action": "click", "target": { "kind": "testId", "value": "add-shirt" } },
+        {
+          "action": "assertText",
+          "target": { "kind": "testId", "value": "cart-count" },
+          "expected": "1"
+        }
+      ]
+    }
+  ]
+}

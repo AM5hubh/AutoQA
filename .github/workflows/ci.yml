@@ -1,0 +1,101 @@
+name: Verify AutoQA
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - uses: actions/setup-python@v5
+        with:
+          {
+            python-version: '3.13',
+            cache: pip,
+            cache-dependency-path: services/ai/requirements.txt,
+          }
+      - run: npm ci
+      - run: pip install -r services/ai/requirements.txt
+      - run: npm run setup && npm run db:generate
+      - run: npm run check
+      - run: python -m pytest -q
+      - run: docker compose up -d --build
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for application
+        run: |
+          for i in $(seq 1 60); do
+            if curl --fail --silent http://localhost:3000/ >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker compose logs --tail 100
+          exit 1
+      - run: npm run test:e2e
+      - run: docker compose exec -T worker node --import tsx scripts/network-check.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-evidence
+          path: |
+            playwright-report/
+            test-results/
+      - name: Service diagnostics
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: Stop services
+        if: always()
+        run: docker compose down
+  images:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          {
+            registry: ghcr.io,
+            username: '${{ github.actor }}',
+            password: '${{ secrets.GITHUB_TOKEN }}',
+          }
+      - name: Registry prefix
+        run: echo "IMAGE_PREFIX=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          {
+            context: .,
+            file: infra/Dockerfile,
+            target: base,
+            push: true,
+            tags: '${{ env.IMAGE_PREFIX }}-app:${{ github.sha }}',
+          }
+      - uses: docker/build-push-action@v6
+        with:
+          {
+            context: .,
+            file: infra/Dockerfile,
+            target: web,
+            push: true,
+            tags: '${{ env.IMAGE_PREFIX }}-web:${{ github.sha }}',
+          }
+      - uses: docker/build-push-action@v6
+        with:
+          { context: services/ai, push: true, tags: '${{ env.IMAGE_PREFIX }}-ai:${{ github.sha }}' }
+      - uses: docker/build-push-action@v6
+        with:
+          {
+            context: .,
+            file: infra/browser.Dockerfile,
+            push: true,
+            tags: '${{ env.IMAGE_PREFIX }}-browser:${{ github.sha }}',
+          }

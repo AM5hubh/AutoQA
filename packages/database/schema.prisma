@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model User {
+  id String @id @default(uuid())
+  email String @unique
+  passwordHash String?
+  emailVerifiedAt DateTime?
+  sessionVersion Int @default(0)
+  identities Identity[]
+  authTokens AuthToken[]
+  createdAt DateTime @default(now())
+  projects Project[]
+}
+model Project {
+  id String @id @default(uuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  name String
+  baseUrl String
+  additionalOrigins String[] @default([])
+  targetRevision Int @default(1)
+  verificationToken String? @unique
+  verificationMethod String?
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+  suites Suite[]
+  generations Generation[]
+  @@index([ownerId, createdAt])
+}
+model Generation {
+  id String @id @default(uuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id])
+  instructions String
+  paths Json
+  status String @default("QUEUED")
+  observations Json?
+  error String?
+  usage Json?
+  suiteId String?
+  createdAt DateTime @default(now())
+  heartbeat DateTime?
+  @@index([status, createdAt])
+}
+model Suite {
+  id String @id @default(uuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id])
+  title String
+  revision Int @default(1)
+  approvedRevision Int?
+  approvedTargetRevision Int?
+  plan Json
+  paths Json
+  model String?
+  promptVersion String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs Run[]
+  @@index([projectId, createdAt])
+}
+model Identity {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  provider String
+  subject String
+  @@unique([provider, subject])
+  @@unique([userId, provider])
+}
+model AuthToken {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  kind String
+  hash String @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  consumedAt DateTime?
+  @@index([userId, kind, createdAt])
+}
+model Run {
+  id String @id @default(uuid())
+  suiteId String
+  suite Suite @relation(fields: [suiteId], references: [id])
+  revision Int
+  snapshot Json
+  config Json
+  status String @default("QUEUED")
+  cancelRequested Boolean @default(false)
+  error String?
+  analysis Json?
+  analysisWarning String?
+  usage Json?
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+  startedAt DateTime?
+  finishedAt DateTime?
+  heartbeat DateTime?
+  results TestResult[]
+  events RunEvent[]
+  artifacts Artifact[]
+  @@index([status, createdAt])
+  @@index([suiteId, createdAt])
+}
+model TestResult {
+  id String @id @default(uuid())
+  runId String
+  run Run @relation(fields: [runId], references: [id])
+  testId String
+  title String
+  viewport String
+  status String
+  durationMs Int
+  steps Json
+  diagnostics Json
+  artifacts Artifact[]
+  @@unique([runId, testId, viewport])
+}
+model RunEvent {
+  id Int @id @default(autoincrement())
+  runId String
+  run Run @relation(fields: [runId], references: [id])
+  type String
+  payload Json
+  createdAt DateTime @default(now())
+  @@index([runId, id])
+}
+model Artifact {
+  id String @id @default(uuid())
+  runId String
+  run Run @relation(fields: [runId], references: [id])
+  resultId String?
+  result TestResult? @relation(fields: [resultId], references: [id])
+  type String
+  storageKey String @unique
+  size Int
+  expiresAt DateTime
+  expired Boolean @default(false)
+  @@index([expiresAt, expired])
+}

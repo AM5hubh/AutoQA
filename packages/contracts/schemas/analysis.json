@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "resultId": {
+          "title": "Resultid",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "assertion",
+            "locator",
+            "network",
+            "timeout",
+            "accessibility",
+            "layout",
+            "environment"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 1500,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "evidenceIds": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "Evidenceids",
+          "type": "array"
+        },
+        "investigation": {
+          "maxLength": 1500,
+          "title": "Investigation",
+          "type": "string"
+        },
+        "uncertainty": {
+          "maxLength": 500,
+          "title": "Uncertainty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resultId",
+        "category",
+        "explanation",
+        "evidenceIds",
+        "investigation",
+        "uncertainty"
+      ],
+      "title": "Finding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "maxItems": 15,
+      "title": "Findings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "findings"
+  ],
+  "title": "Analysis",
+  "type": "object"
+}

@@ -1,0 +1,28 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD before production initialization}
+  api:
+    environment:
+      NODE_ENV: production
+      ENABLE_DEMO_TARGET: 'false'
+      SMTP_HOST: ${SMTP_HOST:?Set a real SMTP host}
+      SMTP_FROM: ${SMTP_FROM:?Set a verified sender address}
+  worker:
+    environment:
+      ENABLE_DEMO_TARGET: 'false'
+  egress:
+    environment:
+      ENABLE_DEMO_TARGET: 'false'
+  gateway:
+    image: caddy:2-alpine
+    ports: ['80:80', '443:443']
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST to the deployment hostname}
+    volumes:
+      ['./infra/Caddyfile:/etc/caddy/Caddyfile:ro', 'caddy-data:/data', 'caddy-config:/config']
+    networks: [data, outbound]
+    depends_on: [web, api]
+volumes:
+  caddy-data:
+  caddy-config:

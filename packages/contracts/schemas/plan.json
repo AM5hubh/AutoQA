@@ -1,0 +1,475 @@
+{
+  "$defs": {
+    "AssertText": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "assertText",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        },
+        "expected": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Expected",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "target",
+        "expected"
+      ],
+      "title": "AssertText",
+      "type": "object"
+    },
+    "AssertURL": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "assertURL",
+          "title": "Action",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 2000,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "path"
+      ],
+      "title": "AssertURL",
+      "type": "object"
+    },
+    "AssertVisible": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "assertVisible",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "action",
+        "target"
+      ],
+      "title": "AssertVisible",
+      "type": "object"
+    },
+    "Check": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "check",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        },
+        "checked": {
+          "title": "Checked",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action",
+        "target",
+        "checked"
+      ],
+      "title": "Check",
+      "type": "object"
+    },
+    "Click": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "click",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "action",
+        "target"
+      ],
+      "title": "Click",
+      "type": "object"
+    },
+    "Fill": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "fill",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        },
+        "value": {
+          "maxLength": 1000,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "target",
+        "value"
+      ],
+      "title": "Fill",
+      "type": "object"
+    },
+    "Label": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "label",
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "Label",
+      "type": "object"
+    },
+    "Navigate": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "navigate",
+          "title": "Action",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 2000,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "path"
+      ],
+      "title": "Navigate",
+      "type": "object"
+    },
+    "Role": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "role",
+          "title": "Kind",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "button",
+            "link",
+            "textbox",
+            "checkbox",
+            "combobox",
+            "heading",
+            "alert",
+            "status",
+            "listitem"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "role",
+        "name"
+      ],
+      "title": "Role",
+      "type": "object"
+    },
+    "Screenshot": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "screenshot",
+          "title": "Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "Screenshot",
+      "type": "object"
+    },
+    "Select": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "select",
+          "title": "Action",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Role"
+            },
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "$ref": "#/$defs/TestId"
+            }
+          ],
+          "title": "Target"
+        },
+        "value": {
+          "maxLength": 200,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "target",
+        "value"
+      ],
+      "title": "Select",
+      "type": "object"
+    },
+    "TestCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "requirement": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Requirement",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "preconditions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Preconditions",
+          "type": "array"
+        },
+        "assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Navigate"
+              },
+              {
+                "$ref": "#/$defs/Click"
+              },
+              {
+                "$ref": "#/$defs/Fill"
+              },
+              {
+                "$ref": "#/$defs/Select"
+              },
+              {
+                "$ref": "#/$defs/Check"
+              },
+              {
+                "$ref": "#/$defs/AssertVisible"
+              },
+              {
+                "$ref": "#/$defs/AssertText"
+              },
+              {
+                "$ref": "#/$defs/AssertURL"
+              },
+              {
+                "$ref": "#/$defs/Screenshot"
+              }
+            ]
+          },
+          "maxItems": 15,
+          "minItems": 2,
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requirement",
+        "priority",
+        "preconditions",
+        "assumptions",
+        "steps"
+      ],
+      "title": "TestCase",
+      "type": "object"
+    },
+    "TestId": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "testId",
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "TestId",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "tests": {
+      "items": {
+        "$ref": "#/$defs/TestCase"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Tests",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "tests",
+    "limitations"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

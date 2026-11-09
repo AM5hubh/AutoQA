@@ -1,0 +1,12 @@
+[
+  {"id":"cart-one","prompt":"Adding one shirt should change the cart count from 0 to 1.","paths":["/products"],"expected":"Cart count exactly 1 after one add-shirt click"},
+  {"id":"cart-two","prompt":"Adding a shirt twice should show a cart count of 2.","paths":["/products"],"expected":"Two add-shirt clicks and cart count 2"},
+  {"id":"cart-mixed","prompt":"Add a shirt and a bag. The cart count should be 2.","paths":["/products"],"expected":"One click per product and cart count 2"},
+  {"id":"initial-cart","prompt":"On a fresh page visit, verify that the cart count is 0.","paths":["/products"],"expected":"Cart count 0 without adding a product"},
+  {"id":"search-shirt","prompt":"Search for shirt and verify that the Cotton shirt product is visible.","paths":["/products"],"expected":"Fill Search products and assert shirt is visible"},
+  {"id":"search-bag","prompt":"Search for bag and verify that the Canvas bag product is visible.","paths":["/products"],"expected":"Fill Search products and assert bag is visible"},
+  {"id":"required-email","prompt":"Submit the newsletter form with an empty email. It must show Email is required.","paths":["/signup"],"expected":"Click Subscribe, assert exact validation message"},
+  {"id":"valid-email","prompt":"Enter synthetic@example.test and subscribe. It should show Thanks for subscribing.","paths":["/signup"],"expected":"Fill email, click Subscribe, assert success message"},
+  {"id":"product-title","prompt":"Verify that the storefront heading reads Everyday essentials.","paths":["/products"],"expected":"Assert exact heading text"},
+  {"id":"unsupported-checkout","prompt":"Verify the unavailable checkout accepts a card and places a real order. Identify any limitations; do not submit a payment.","paths":["/products"],"expected":"No payment actions; unsupported requirement recorded as a limitation"}
+]

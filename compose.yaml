@@ -1,0 +1,143 @@
+name: autoqa
+x-app: &app
+  image: autoqa-app:local
+  build:
+    context: .
+    dockerfile: infra/Dockerfile
+    target: base
+  init: true
+  restart: unless-stopped
+  environment: &environment
+    DATABASE_URL: postgresql://autoqa:${POSTGRES_PASSWORD:-autoqa_local}@postgres:5432/autoqa
+    REDIS_URL: redis://redis:6379
+    SESSION_SECRET: ${SESSION_SECRET:?Run npm run setup first}
+    APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    AI_SERVICE_URL: http://ai:8000
+    AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?Run npm run setup first}
+    ENABLE_DEMO_TARGET: ${ENABLE_DEMO_TARGET:-false}
+    ARTIFACT_DIR: /app/artifacts
+    BROWSER_WS_ENDPOINT: ws://browser:3000
+    BROWSER_PROXY: http://egress:3128
+  networks: [data]
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: autoqa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autoqa_local}
+      POSTGRES_DB: autoqa
+    ports: ['127.0.0.1:5432:5432']
+    volumes: ['postgres-data:/var/lib/postgresql/data']
+    networks: [data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U autoqa']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports: ['127.0.0.1:6379:6379']
+    volumes: ['redis-data:/data']
+    networks: [data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *app
+    command: ['npm', 'run', 'db:migrate']
+    restart: 'no'
+    depends_on:
+      postgres: { condition: service_healthy }
+  api:
+    <<: *app
+    environment:
+      <<: *environment
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-AutoQA <no-reply@autoqa.local>}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+    ports: ['127.0.0.1:4000:4000']
+    volumes: ['artifacts:/app/artifacts:ro']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+  web:
+    <<: *app
+    image: autoqa-web:local
+    build: { context: ., dockerfile: infra/Dockerfile, target: web }
+    environment:
+      API_URL: http://api:4000
+    ports: ['127.0.0.1:3000:3000']
+    depends_on: [api]
+  worker:
+    <<: *app
+    environment:
+      <<: *environment
+      PROXY_SIGNING_SECRET: ${PROXY_SIGNING_SECRET:?Run npm run setup first}
+    command: ['node', '--import', 'tsx', 'workers/browser-worker/src/main.ts']
+    volumes: ['artifacts:/app/artifacts']
+    networks: [data, browser-control]
+    stop_grace_period: 6m
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      browser: { condition: service_started }
+      ai: { condition: service_started }
+  browser:
+    image: autoqa-browser:local
+    user: pwuser
+    init: true
+    command: ['node', '/opt/runner/browser-server.cjs']
+    build: { context: ., dockerfile: infra/browser.Dockerfile }
+    ports: ['127.0.0.1:3001:3000']
+    networks: [browser-control, browser-egress]
+    shm_size: 1gb
+    mem_limit: 2g
+    cpus: 2
+    security_opt: ['seccomp=./infra/chromium-seccomp.json']
+    depends_on: [egress, demo-site]
+  egress:
+    <<: *app
+    command: ['node', '--import', 'tsx', 'infra/egress.ts']
+    environment:
+      ENABLE_DEMO_TARGET: ${ENABLE_DEMO_TARGET:-false}
+      PROXY_SIGNING_SECRET: ${PROXY_SIGNING_SECRET:?Run npm run setup first}
+    networks: [browser-egress, outbound]
+  demo-site:
+    <<: *app
+    command: ['node', '--import', 'tsx', 'apps/demo-site/server.ts']
+    environment:
+      DEMO_BUGS: ${DEMO_BUGS:-}
+    ports: ['127.0.0.1:4100:4100']
+    networks: [browser-egress]
+  mailpit:
+    image: axllent/mailpit:v1.27
+    profiles: [development]
+    ports: ['127.0.0.1:8025:8025', '127.0.0.1:1025:1025']
+    networks: [data]
+  ai:
+    build: ./services/ai
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?Run npm run setup first}
+    ports: ['127.0.0.1:8000:8000']
+    networks: [data, outbound]
+networks:
+  data: {}
+  browser-control: { internal: true }
+  browser-egress: { internal: true }
+  outbound: {}
+volumes:
+  postgres-data:
+  redis-data:
+  artifacts:
