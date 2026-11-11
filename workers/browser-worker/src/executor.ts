@@ -58,7 +58,7 @@ export async function safeContext(
   viewport: keyof typeof viewports,
   signal: AbortSignal,
   additionalOrigins: string[] = [],
-  jobId = randomUUID(),
+  jobId: string = randomUUID(),
 ) {
   signal.throwIfAborted();
   const context = await browser.newContext({
@@ -146,7 +146,7 @@ export async function inspect(
   paths: string[],
   signal: AbortSignal,
   additionalOrigins: string[] = [],
-  jobId = randomUUID(),
+  jobId: string = randomUUID(),
 ) {
   const context = await safeContext(browser, origin, 'desktop', signal, additionalOrigins, jobId);
   try {
@@ -281,6 +281,7 @@ export async function executeSuite(
           viewport,
           hooks.signal,
           hooks.additionalOrigins,
+          hooks.jobId,
         );
         await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
         page = await context.newPage();
@@ -377,6 +378,7 @@ export async function executeSuite(
             viewport,
             hooks.signal,
             hooks.additionalOrigins,
+            hooks.jobId,
           );
           const page = await context.newPage();
           await page.goto(assertSameOrigin(pathname, origin).href, {

@@ -74,6 +74,11 @@ export function createProxy() {
         res.end();
       });
       upstream.on('timeout', () => upstream.destroy());
+      const deadline = setTimeout(
+        () => upstream.destroy(),
+        Math.min(60000, access.expires - Date.now()),
+      );
+      upstream.on('close', () => clearTimeout(deadline));
       req.on('aborted', () => upstream.destroy());
       req.pipe(upstream);
     } catch {
@@ -83,7 +88,9 @@ export function createProxy() {
   });
   server.on('connect', async (req, client, head) => {
     if (!req.headers['proxy-authorization']) {
-      client.end('HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm="AutoQA"\r\n\r\n');
+      client.end(
+        'HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm="AutoQA"\r\n\r\n',
+      );
       return;
     }
     try {

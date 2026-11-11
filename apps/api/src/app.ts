@@ -57,6 +57,14 @@ export function createApp() {
   const app = express();
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)
     throw new Error('SESSION_SECRET must have at least 32 characters');
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!appOrigin.startsWith('https://') ||
+      !process.env.SMTP_FROM ||
+      !process.env.SMTP_HOST ||
+      ['mailpit', 'localhost', '127.0.0.1'].includes(process.env.SMTP_HOST))
+  )
+    throw new Error('Production requires an HTTPS APP_ORIGIN and a real SMTP host and sender');
   app.set('trust proxy', 1);
   app.use(helmet());
   app.use(express.json({ limit: '128kb' }));

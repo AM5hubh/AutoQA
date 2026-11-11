@@ -35,8 +35,24 @@ const publicUser = {
   emailVerifiedAt: true,
   identities: { select: { provider: true } },
 } as const;
-const limiter = (limit: number) =>
-  rateLimit({ windowMs: 15 * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false });
+const limiter = (limit: number, byEmail = false) =>
+  rateLimit({
+    windowMs: 15 * 60000,
+    limit,
+    standardHeaders: byEmail ? false : 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many attempts. Please wait 15 minutes before trying again.' },
+    ...(byEmail
+      ? {
+          keyGenerator: (req: Request) =>
+            tokenHash(
+              typeof req.body?.email === 'string'
+                ? req.body.email.trim().toLowerCase().slice(0, 254)
+                : 'invalid',
+            ),
+        }
+      : {}),
+  });
 
 export async function requireAccount(req: Request, res: Response, next: NextFunction) {
   const user = req.session.userId
@@ -229,7 +245,7 @@ export function authRouter() {
       ),
     ),
   );
-  router.post('/signup', limiter(5), async (req, res) => {
+  router.post('/signup', limiter(5), limiter(5, true), async (req, res) => {
     const input = z.object({ email, password }).strict().parse(req.body);
     const hash = await argon2.hash(input.password, { type: argon2.argon2id });
     const user = await db.$transaction(async (tx) => {
@@ -240,7 +256,7 @@ export function authRouter() {
     if (user) await sendAuthEmail(user.id, 'verify');
     res.status(202).json(generic);
   });
-  router.post('/login', limiter(10), async (req, res) => {
+  router.post('/login', limiter(10), limiter(10, true), async (req, res) => {
     const input = z
       .object({ email, password: z.string().min(1).max(128) })
       .strict()
@@ -263,7 +279,7 @@ export function authRouter() {
     ['resend-verification', 'verify'],
     ['forgot-password', 'reset'],
   ] as const) {
-    router.post(`/${route}`, limiter(10), async (req, res) => {
+    router.post(`/${route}`, limiter(10), limiter(3, true), async (req, res) => {
       const input = z.object({ email }).strict().parse(req.body);
       const user = await db.user.findUnique({ where: { email: input.email } });
       if (user && (kind === 'reset' || !user.emailVerifiedAt)) await sendAuthEmail(user.id, kind);
@@ -348,6 +364,7 @@ export function authRouter() {
         parameters,
         config.redirect,
         flow.verifier,
+        { signal: AbortSignal.timeout(10000) },
       );
       const tokens = await oauth.processAuthorizationCodeResponse(
         config.server,
@@ -357,7 +374,9 @@ export function authRouter() {
       );
       let address: string, subject: string;
       if (config.provider === 'google') {
-        await oauth.validateApplicationLevelSignature(config.server, response);
+        await oauth.validateApplicationLevelSignature(config.server, response, {
+          signal: AbortSignal.timeout(10000),
+        });
         const claims = oauth.getValidatedIdTokenClaims(tokens)!;
         if (claims.email_verified !== true || typeof claims.email !== 'string')
           throw new HttpError(422, 'A verified provider email is required');

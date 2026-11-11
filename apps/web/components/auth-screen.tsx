@@ -15,7 +15,7 @@ const titles: Record<string, string> = {
   'reset-password': 'Choose a new password.',
 };
 export const authPaths = Object.keys(titles).map((p) => `/${p}`);
-export function AuthScreen({ onLogin }: { onLogin: (user: { email: string }) => void }) {
+export function AuthScreen({ onLogin }: { onLogin: (user: { email: string } | null) => void }) {
   const path = usePathname().slice(1);
   const mode = titles[path] ? path : 'login';
   const router = useRouter();
@@ -62,6 +62,10 @@ export function AuthScreen({ onLogin }: { onLogin: (user: { email: string }) => 
         router.push('/');
       } else {
         setMessage(result.message || 'Check your email for the next step.');
+        if (mode === 'reset-password') {
+          setCsrf('');
+          onLogin(null);
+        }
         if (['verify-email', 'reset-password'].includes(mode)) {
           window.history.replaceState(null, '', window.location.pathname);
           setToken('');

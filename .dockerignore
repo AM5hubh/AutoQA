@@ -3,6 +3,10 @@ node_modules
 **/.next
 .git
 .env
+.env.*
+!.env.example
+*.log
+.tmp-*
 .venv
 artifacts
 test-results

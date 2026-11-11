@@ -73,7 +73,7 @@ def health():
 async def structured(system, payload, schema):
     if not os.getenv("GROQ_API_KEY"):
         raise HTTPException(503, "Set GROQ_API_KEY to enable AI generation and diagnosis")
-    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     try:
         async with AsyncOpenAI(
             api_key=os.environ["GROQ_API_KEY"], base_url="https://api.groq.com/openai/v1",

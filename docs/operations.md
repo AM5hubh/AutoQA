@@ -2,9 +2,11 @@
 
 ## Configuration
 
-`npm run setup` creates `.env` without overwriting an existing file and generates random session/service secrets. Keep it out of source control. Set `GROQ_API_KEY` only for the AI container. API keys are never sent to Next.js or Chromium.
+`npm run setup` creates `.env` or adds missing defaults while preserving existing values, and generates random session/service/proxy secrets. Keep it out of source control. Set `GROQ_API_KEY` only for the AI container. API keys are never sent to Next.js or Chromium.
 
-`APPROVED_TARGETS` is a JSON array of `{name, origin}` objects. Origins are exact HTTP(S) origins, without credentials, paths, queries, or fragments. External targets must use port 80 or 443 and public IPv4 DNS results. Only `http://demo-site:4100` is allowed as a private target. Restart API, worker, and egress after changing the allowlist.
+Website origins are saved per project and verified by their owner. Users can declare up to ten additional public CDN/API origins. The worker passes a signed, expiring origin policy to the proxy for each job; the proxy resolves, validates, and pins destination IPv4 addresses on every connection. Private networks and nonstandard ports remain blocked. `ENABLE_DEMO_TARGET=true` enables the exact `http://demo-site:4100` development exception; the production overlay disables it.
+
+`PROXY_SIGNING_SECRET` is shared only between worker and egress. SMTP and OAuth secrets are passed only to the API. See [account and website setup](accounts-and-websites.md). The default `COMPOSE_PROFILES=development` starts a local Mailpit inbox. Clear this profile for production and use a real SMTP service.
 
 Default execution settings: desktop 1440×900; mobile 390×844; 10-second actions; 20-second navigation; five-minute total execution deadline; one worker; seven-day artifacts. Browser memory is limited to 2 GiB. Run limits are in the shared contract module.
 
@@ -13,9 +15,9 @@ Default execution settings: desktop 1440×900; mobile 390×844; 10-second action
 1. Copy the repository or build the versioned images. Install Docker with Compose.
 2. Run setup. Set a strong `POSTGRES_PASSWORD` **before first database initialization** and update `DATABASE_URL` for any host-side tooling.
 3. Set `APP_ORIGIN=https://your-hostname` and `PUBLIC_HOST=your-hostname`. Point that hostname's DNS to the host.
-4. Set Groq credentials and restrict the target allowlist to authorized staging sites.
+4. Set Groq credentials, real SMTP settings and sender, and Google/GitHub OAuth credentials. Set `COMPOSE_PROFILES=` and `ENABLE_DEMO_TARGET=false`. Register HTTPS OAuth callbacks for your hostname.
 5. Start: `docker compose -f compose.yaml -f compose.production.yaml up -d --build`.
-6. Provision individual accounts through `docker compose exec api npm run user:create`.
+6. Register through `/signup`, verify the delivered email, then verify your website ownership. Existing accounts require email verification on their next login; historical data remains intact.
 7. Check HTTPS, cookie flags, cross-user access, proxy restrictions, and one complete run before sharing access.
 
 Caddy handles HTTPS. All development ports bind to loopback; firewall the host so only 80/443 and your restricted administration port are reachable. Never expose the database, Redis, AI service, or browser-control port. Changing the password environment variable on an existing PostgreSQL volume does not rotate its database password; rotate it with PostgreSQL administration tools and update clients together.
@@ -58,4 +60,4 @@ For a cross-platform local database check, stop new submissions and run `node sc
 
 `docker compose ps` reports services. `docker compose logs --tail 100 api worker ai browser` provides errors with run IDs. `/health` is process health; `/ready` verifies database access. The worker stores `autoqa:worker:heartbeat` in Redis with a 30-second expiry. Alert on a missing heartbeat, growing queued records, repeated failed jobs, disk pressure, and unexpected model usage.
 
-This single-host portfolio deployment has no high availability. Browser isolation is appropriate for approved controlled targets, not a substitute for an adversarial multi-tenant sandbox review.
+This single-host portfolio deployment has no high availability. Browser isolation is intended for verified, authorized targets, not a substitute for an adversarial multi-tenant sandbox review.

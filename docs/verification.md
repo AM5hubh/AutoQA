@@ -1,34 +1,40 @@
 # Verification record
 
-Verified locally on 8 November 2026 using Windows, Node.js 24, Python 3.13, and Docker Desktop with Linux containers.
+## Public accounts and user-managed websites — 11 November 2026
 
-| Check                                          | Observed result                                                                                                  |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| TypeScript lint, type checking, and unit tests | Passed; 35 tests                                                                                                 |
-| Python contract and AI service tests           | Passed; 10 tests                                                                                                 |
-| Production Next.js build and Compose startup   | Passed                                                                                                           |
-| Full UI workflow                               | Project creation, suite review, revision approval, desktop/mobile execution, report export, and evidence display |
-| Controlled demo execution                      | 12 passed, 0 failed, 0 blocked, including optional accessibility and overflow checks                             |
-| Seeded cart regression                         | Broken cart failed with observed count 0; corrected revision passed; previous snapshot preserved                 |
-| Authorization and lifecycle                    | Ownership, CSRF, unsafe targets, cancellation, artifact expiry, and duplicate submission checks passed           |
-| Interrupted execution                          | Stale run failed while retaining evidence; duplicate delivery did not restart actions                            |
-| Browser network isolation                      | Direct internet, private service, and metadata access blocked; approved demo traffic through proxy succeeded     |
-| Database recovery                              | Dump restored to a separate database; all 12 runs present at the time of backup; live database unchanged         |
+Verified locally with Windows, Node.js 24, Docker Desktop/Linux containers, and Microsoft Edge for application acceptance tests.
 
-The UI accessibility check exposed low-contrast report text and a keyboard-inaccessible scrolling timeline. The shared colors were darkened and the timeline made focusable. The targeted workflow rerun passed with zero axe WCAG 2 A/AA violations on the mobile report page. Across the acceptance checks, four scenarios passed and the missing-credentials scenario was skipped. Automated checks are scoped to the tested page and do not establish full accessibility compliance.
+| Check                                 | Result                                                                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, TypeScript checking, unit tests | Passed; 66 tests                                                                                                                                      |
+| Production Next.js/Compose build      | Passed; services rebuilt and running                                                                                                                  |
+| Browser acceptance suite              | Seven passed; one skipped because Groq credentials are configured                                                                                     |
+| Public signup                         | Account creation, local email delivery, verification, and login passed                                                                                |
+| Password recovery                     | Local reset email, password replacement, old-password rejection, and session invalidation passed                                                      |
+| Token safety                          | Expiry, wrong-purpose tokens, replay, and simultaneous consumption passed                                                                             |
+| OAuth integration                     | Mocked Google/GitHub code flows passed; PKCE, state, signatures, nonce, verified emails, collision handling, and explicit connection checked          |
+| Website management                    | Public origin validation, ownership instructions, active-job edit rejection, stale edits, approval invalidation, and historical snapshots checked     |
+| Ownership proof                       | DNS TXT matching and pinned HTTPS-file requests tested with mocked DNS/HTTP; redirects and private addresses rejected                                 |
+| Browser execution                     | Demo suite completed with 12 passed, 0 failed, 0 blocked                                                                                              |
+| Security and recovery                 | Ownership/CSRF, cancellation, artifact expiry, stale-worker handling, and duplicate delivery passed                                                   |
+| Network isolation                     | Live Docker check passed: direct browser internet/private-service/metadata access blocked; signed demo traffic allowed; off-origin navigation blocked |
+| Accessibility/layout                  | Signup and report automated WCAG A/AA audits passed; mobile website settings checked without horizontal overflow                                      |
 
-Reproduce the checks using the README, `npm run test:e2e`, `docker compose exec -T worker node --import tsx scripts/network-check.ts`, and `node scripts/restore-check.mjs`. Browser screenshots and the Playwright report are generated in ignored `test-results/` and `playwright-report/` directories. End-to-end fixtures create local accounts and preserve their evidence.
+The acceptance suite initially exceeded the login throttle because it repeated unnecessary logins. It now reuses an existing session to check reset invalidation; production rate limits remain enabled. A targeted mobile website-settings rerun also passed. Screenshots and reports are generated under ignored `test-results/` and `playwright-report/` directories.
 
-## Groq integration update
+Google and GitHub report configured credentials in the local API. Real provider consent/callback sessions have not been exercised; automated provider checks use mocked responses. Mailpit delivered local test messages only. Live SMTP delivery and a real user-owned domain's verification remain deployment checks.
 
-Switched to the existing OpenAI Python SDK with Groq's endpoint and default model `openai/gpt-oss-20b`. All 19 Python tests passed, including HTTP-mocked SDK requests for planning and analysis, strict schemas, credential isolation, refusal, invalid/truncated output, and rate limits without retries. The AI container was rebuilt and restarted.
+## Earlier checks
 
-Live Groq authentication and model availability were confirmed. A synthetic planning request through the local service returned HTTP 200 with one validated test and token usage of 1,699 input / 185 output. An initial live request returned a generic 502; subsequent authentication, direct structured-output, and service checks succeeded. This is a smoke check, not a reliability or quality benchmark.
+On 8 November, all 19 Python/Groq service tests passed. A live synthetic request through the local AI endpoint returned a validated `openai/gpt-oss-20b` plan (1,699 input / 185 output tokens). An initial request failed with 502; later authentication, direct structured-output, and service requests succeeded. This is a smoke check, not a model quality benchmark.
 
-## Not verified
+The database backup exercise restored all 12 runs present at that time into a separate database without modifying the live database. The public-account migration subsequently added schema fields and tables without resetting existing data.
 
-- Groq generation quality across the evaluation set, live diagnosis quality, cost, and quantitative coverage benchmarks. The missing-credentials end-to-end case was previously skipped because the test process reported an API key; service error behavior is covered by Python tests.
-- Public HTTPS deployment, GitHub Actions execution, and registry publishing. The configuration is provided but was not deployed remotely.
-- Artifact archive restoration, physical devices, other browser engines, load testing, and hostile multi-tenant sandbox resistance.
+## Remaining limits
 
-This is a controlled portfolio application for approved demo/staging targets. Use the evaluation procedure before making accuracy or reliability claims.
+- No public deployment, remote CI run, or registry publishing has been performed.
+- No broad Groq accuracy/cost benchmark, physical-device test, load test, artifact archive restore, or hostile multi-tenant sandbox assessment has been completed.
+- The dependency audit performed during installation reported an existing Prisma configuration-tooling advisory through `deepmerge-ts` (recursive object graphs). Its suggested fix requires a Prisma major upgrade; this feature change did not force that unrelated migration.
+- Email/provider credentials and recovery links must remain private. The local Mailpit inbox is for development and must not be exposed publicly.
+
+Reproduce checks with the README commands, `npm run test:e2e`, and `docker compose exec -T worker node --import tsx scripts/network-check.ts`. Use the evaluation procedure before making accuracy or reliability claims.
